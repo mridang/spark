@@ -54,7 +54,7 @@ import org.apache.spark.util.Utils
  *    number for it own shard.
  *
  * @param streamName   Kinesis stream name
- * @param endpointUrl  Url of Kinesis service (e.g., https://kinesis.us-east-1.amazonaws.com)
+ * @param kinesisEndpointUrl  Url of Kinesis service (e.g., https://kinesis.us-east-1.amazonaws.com)
  * @param regionName  Region name used by the Kinesis Client Library for
  *                    DynamoDB (lease coordination and checkpointing) and CloudWatch (metrics)
  * @param initialPosition  Instance of [[KinesisInitialPosition]]
@@ -83,7 +83,8 @@ import org.apache.spark.util.Utils
  */
 private[kinesis] class KinesisReceiver[T](
     val streamName: String,
-    endpointUrl: String,
+    kinesisEndpointUrl: String,
+    dynamoEndpointUrl: String,
     regionName: String,
     initialPosition: KinesisInitialPosition,
     checkpointAppName: String,
@@ -159,8 +160,11 @@ private[kinesis] class KinesisReceiver[T](
         dynamoDBCreds.map(_.provider).getOrElse(kinesisProvider),
         cloudWatchCreds.map(_.provider).getOrElse(kinesisProvider),
         workerId)
-        .withKinesisEndpoint(endpointUrl)
+        .withKinesisEndpoint(kinesisEndpointUrl)
+        .withDynamoDBEndpoint(dynamoEndpointUrl)
+        .withInitialPositionInStream(initialPosition.getPosition)
         .withTaskBackoffTimeMillis(500)
+        .withMetricsLevel("NONE")
         .withRegionName(regionName)
 
       // Update the Kinesis client lib config with timestamp
